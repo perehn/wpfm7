@@ -1,0 +1,83 @@
+/*=============
+  Framework 7
+=============*/
+@imgBaseUrl: "../img";
+
+@import "fm7/mixins.less";
+html,body {
+    position: relative;
+    height: 100%;
+    width: 100%;
+    overflow-x: hidden;
+   
+}
+body {
+    font-family: Helvetica Neue, Helvetica, Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    color: #000;
+    font-size: 14px;
+    line-height: 1.4;
+    width: 100%;
+    -webkit-text-size-adjust:100%;
+    background: #fff;
+    overflow: hidden;
+}
+// Fix for iPad in Safari in Lanscape mode
+@media all and (width:1024px) and (height:691px) and (orientation:landscape) {
+    html, body {
+        height: 671px;
+    }
+}
+@media all and (width:1024px) and (height:692px) and (orientation:landscape) {
+    html, body {
+        height: 672px;
+    }
+}
+
+* {
+    -webkit-tap-highlight-color: rgba(0,0,0,0);
+    -webkit-touch-callout:none;
+    .border-box()
+}
+a, input, textarea, select {
+    outline: 0;
+}
+@blue:#007aff;
+@red: #fc3e39;
+a {
+    text-decoration: none;
+    color: @blue;
+}
+p {
+    margin: 1em 0;
+}
+
+@import "fm7/grid.less";
+@import "fm7/views.less";
+@import "fm7/pages.less";
+@import "fm7/toolbars.less";
+@import "fm7/toolbars-pages.less";
+@import "fm7/searchbar.less";
+@import "fm7/icons.less";
+@import "fm7/badges.less";
+@import "fm7/content-block.less";
+@import "fm7/lists.less";
+@import "fm7/contacts.less";
+@import "fm7/forms.less";
+@import "fm7/modals.less";
+@import "fm7/panels.less";
+@import "fm7/tabs.less";
+@import "fm7/messages.less";
+@import "fm7/statusbar.less";
+@import "fm7/preloader.less";
+@import "fm7/pull-to-refresh.less";
+@import "fm7/slider.less";
+@import "fm7/photo-browser.less";
+@import "fm7/notifications.less";
+
+@import "appmenu.less";
+@import "app.less";
+
+
+

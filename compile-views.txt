@@ -1,0 +1,10 @@
+
+
+Stå i root-folder:
+can-compile **/*.mustache --out views.production.js --can 2.1.2;
+
+se https://github.com/daffl/can-compile
+
+
+bygg med require:
+r.js -o build.js
