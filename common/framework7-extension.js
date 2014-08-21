@@ -8,10 +8,14 @@ define(['can', 'framework7'],
 		
 		override.get = app.get;
 		
-		app.nextPage = {};
+		app.nextPage = {
+			options : {}
+		};
 		
 		app.get = function(url, callback){
+			console.log('Get ' + url);
 			if(url.indexOf('page_')>-1){
+				app.closePanel();
 				var pagehtml = can.view.render('//common/pagebase.mustache', {title : url.substring(5), showBackLink : app.nextPage.showBackLink});
 			
 				app.nextPage.element = $('<div class="page-content"></div>')
@@ -26,6 +30,22 @@ define(['can', 'framework7'],
 				return;
 			}
 			
+			else if(url.indexOf('/') == 0 || url.indexOf('http://wordpress.dev') == 0){
+				app.closePanel();
+				var pagehtml = can.view.render('//common/pagebase.mustache', {title : '', showBackLink : true});
+				app.nextPage.element = $('<div class="page-content"></div>');
+				app.nextPage.options.wordpressUrl = url;
+				
+				var controller = new WordpressController(app.nextPage.element, app.nextPage.options);
+				controller._preRenderPhase().done(function(){
+					callback(pagehtml);
+					
+					
+				});
+				
+				return;
+				
+			}
 			override.get(url,callback);
 		}
 		
@@ -59,17 +79,20 @@ define(['can', 'framework7'],
 			var pageConfig = e.detail.page;
 			
 			
+			
 			var $page = $(pageConfig.container);
 			
 			$page.append(app.nextPage.element);
 			var controller = $page.find('.page-content').control();
 			controller._postRenderPhase();
-			app.nextPage = {};
+			app.nextPage = {
+				options : {}
+			};
 			
 			
 		});
 		Framework7.$(document).on('pageAfterAnimation', function (e) {
-			app.closePanel();
+			//app.closePanel();
 			
 			
 		});

@@ -24978,7 +24978,7 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
 	return can.Map;
 });
 /*
- * Framework7 0.9.0
+ * Framework7 0.9.4
  * Full Featured HTML Framework For Building iOS 7 Apps
  *
  * http://www.idangero.us/framework7
@@ -24989,7 +24989,7 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
  *
  * Licensed under MIT
  *
- * Released on: June 28, 2014
+ * Released on: July 26, 2014
 */
 (function () {
 
@@ -25003,26 +25003,18 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
         var app = this;
     
         // Version
-        app.version = '0.9.0';
-    
-        // Anim Frame
-        app._animFrame = function (callback) {
-            if (window.requestAnimationFrame) return window.requestAnimationFrame(callback);
-            else if (window.webkitRequestAnimationFrame) return window.webkitRequestAnimationFrame(callback);
-            else if (window.mozRequestAnimationFrame) return window.mozRequestAnimationFrame(callback);
-            else {
-                return window.setTimeout(callback, 1000 / 60);
-            }
-        };
+        app.version = '0.9.4';
     
         // Default Parameters
         app.params = {
             cache: true,
             cacheIgnore: [],
+            cacheIgnoreGetParameters: false,
             cacheDuration: 1000 * 60 * 10, // Ten minutes 
             preloadPreviousPage: true,
             // Push State
             pushState: false,
+            pushStateRoot: undefined,
             pushStateNoAnimation: false,
             pushStateSeparator: '#!/',
             // Fast clicks
@@ -25036,6 +25028,8 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
             swipeBackPageBoxShadow: true,
             // Ajax
             ajaxLinks: undefined, // or CSS selector
+            // External Links
+            externalLinks: ['external'], // array of CSS class selectors and/or rel attributes
             // Sortable
             sortable: true,
             // Swipeout
@@ -25045,6 +25039,10 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
             smartSelectBackTemplate: '<div class="left sliding"><a href="#" class="back link"><i class="icon icon-back-blue"></i><span>{{backText}}</span></a></div>',
             smartSelectBackText: 'Back',
             smartSelectSearchbar: false,
+            smartSelectBackOnSelect: false,
+            // Searchbar
+            searchbarHideDividers: true,
+            searchbarHideGroups: true,
             // Panels
             swipePanel: false, // or 'left' or 'right'
             swipePanelActiveArea: 0,
@@ -25064,6 +25062,8 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
             modalActionsTemplate: '<div class="actions-modal">{{buttons}}</div>',
             modalButtonOk: 'OK',
             modalButtonCancel: 'Cancel',
+            modalUsernamePlaceholder: 'Username',
+            modalPasswordPlaceholder: 'Password',
             modalTitle: 'Framework7',
             modalCloseByOutside: false,
             actionsCloseByOutside: true,
@@ -25105,7 +25105,14 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
         app.rtl = $('body').css('direction') === 'rtl';
         if (app.rtl) $('html').attr('dir', 'rtl');
     
+        // Overwrite statusbar overlay
+        if (typeof app.params.statusbarOverlay !== 'undefined') {
+            if (app.params.statusbarOverlay) $('html').addClass('with-statusbar-overlay');
+            else $('html').removeClass('with-statusbar-overlay');
+        }
+    
         
+    
         /*======================================================
         ************   Views   ************
         ======================================================*/
@@ -25145,10 +25152,18 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
             // History
             view.history = [];
             var viewURL = docLocation;
+            var pushStateSeparator = app.params.pushStateSeparator;
+            var pushStateRoot = app.params.pushStateRoot;
             if (app.params.pushState) {
-                if (viewURL.indexOf('#!/') >= 0 && viewURL.indexOf('#!/#') < 0) viewURL = viewURL.split('#!/')[0];
+                if (pushStateRoot) {
+                    viewURL = pushStateRoot;
+                }
+                else {
+                    if (viewURL.indexOf(pushStateSeparator) >= 0 && viewURL.indexOf(pushStateSeparator + '#') < 0) viewURL = viewURL.split(pushStateSeparator)[0];
+                }
+                    
             }
-            view.url = container.attr('data-url') || viewURL;
+            view.url = container.attr('data-url') || view.params.url || viewURL;
         
             // Store to history main view's url
             if (view.url) {
@@ -25163,6 +25178,26 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
         
             // Pages
             view.pagesContainer = container.find('.pages')[0];
+        
+            // Active Page
+            if (!view.activePage) {
+                var currentPage = $(view.pagesContainer).find('.page-on-center');
+                var currentPageData;
+                if (currentPage.length === 0) {
+                    currentPage = $(view.pagesContainer).find('.page');
+                    currentPage = currentPage.eq(currentPage.length - 1);
+                }
+                if (currentPage.length > 0) {
+                    currentPageData = currentPage[0].f7PageData;
+                
+                }
+                if (currentPageData) {
+                    currentPageData.view = view;
+                    if (view.url) currentPageData.url = view.url;
+                    view.activePage = currentPageData;
+                    currentPage[0].f7PageData = currentPageData;
+                }
+            }
         
             // Is main
             view.main = container.hasClass(app.params.viewMainClass);
@@ -25216,6 +25251,7 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
                     viewContainerWidth = container.width();
                     var target = $(e.target);
                     activePage = target.is('.page') ? target : target.parents('.page');
+                    if (activePage.hasClass('no-swipeback')) cancel = true;
                     previousPage = container.find('.page-on-left:not(.cached)');
                     var notFromBorder = touchesStart.x - container.offset().left > view.params.swipeBackPageActiveArea;
                     if (app.rtl) {
@@ -25436,12 +25472,20 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
         
             // Push State on load
             if (app.params.pushState && view.main) {
-                var pushStateSeparator = app.params.pushStateSeparator;
-                if (docLocation.indexOf(pushStateSeparator) >= 0 && docLocation.indexOf(pushStateSeparator + '#') < 0) {
-                    var pushStateAnimatePages;
-                    if (app.params.pushStateNoAnimation === true) pushStateAnimatePages = false;
-                    app.loadPage(view, docLocation.split(pushStateSeparator)[1], pushStateAnimatePages, false);
+                var pushStateUrl;
+                if (pushStateRoot) {
+                    pushStateUrl = docLocation.split(app.params.pushStateRoot + pushStateSeparator)[1];
                 }
+        
+                else if (docLocation.indexOf(pushStateSeparator) >= 0 && docLocation.indexOf(pushStateSeparator + '#') < 0) {
+                    pushStateUrl = docLocation.split(pushStateSeparator)[1];
+                }
+                var pushStateAnimatePages;
+                if (app.params.pushStateNoAnimation === true) pushStateAnimatePages = false;
+                if (pushStateUrl) {
+                    app.loadPage(view, pushStateUrl, pushStateAnimatePages, false);
+                }
+                    
             }
         
             // Destroy
@@ -25591,17 +25635,32 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
         ======================================================*/
         app.initSearchbar = function (pageContainer) {
             pageContainer = $(pageContainer);
-            var searchbar = pageContainer.find('.searchbar');
+            var searchbar = pageContainer.hasClass('searchbar') ? pageContainer : pageContainer.find('.searchbar');
             if (searchbar.length === 0) return;
-            var searchbarOverlay = pageContainer.hasClass('navbar') ? $('.searchbar-overlay') : pageContainer.find('.searchbar-overlay');
+            if (!pageContainer.hasClass('page')) pageContainer = searchbar.parents('.page').eq(0);
+            var searchbarOverlay = pageContainer.hasClass('page') ? pageContainer.find('.searchbar-overlay') : $('.searchbar-overlay');
             var input = searchbar.find('input[type="search"]');
             var clear = searchbar.find('.searchbar-clear');
             var cancel = searchbar.find('.searchbar-cancel');
-            var searchList = $(searchbar.data('search-list'));
-            var searchIn = searchbar.data('search-in');
-            var searchBy = searchbar.data('search-by');
-            var found = $('.searchbar-found');
-            var notFound = $('.searchbar-not-found');
+            var searchList = $(searchbar.attr('data-search-list'));
+            var searchIn = searchbar.attr('data-search-in');
+            var searchBy = searchbar.attr('data-search-by');
+            var found = searchbar.attr('data-searchbar-found');
+            if (!found) {
+                found = pageContainer.find('.searchbar-found');
+                if (found.length === 0) found = $('.searchbar-found');
+            }
+            else {
+                found = $(found);
+            }
+            var notFound = searchbar.attr('data-searchbar-not-found');
+            if (!notFound) {
+                notFound = pageContainer.find('.searchbar-not-found');
+                if (notFound.length === 0) notFound = $('.searchbar-not-found');
+            }
+            else {
+                notFound = $(notFound);
+            }
         
             // Cancel button
             var cancelWidth, cancelMarginProp = app.rtl ? 'margin-left' : 'margin-right';
@@ -25694,7 +25753,7 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
             // Search
             function search(query) {
                 var values = query.trim().toLowerCase().split(' ');
-                searchList.find('li').css('display', '');
+                searchList.find('li').removeClass('hidden-by-searchbar');
                 var foundItems = [];
                 searchList.find('li').each(function (index, el) {
                     el = $(el);
@@ -25707,12 +25766,41 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
                         if (compareWith.indexOf(values[i]) >= 0) wordsMatch++;
                     }
                     if (wordsMatch !== values.length) {
-                        el.hide();
+                        el.addClass('hidden-by-searchbar');
                     }
                     else {
                         foundItems.push(el[0]);
                     }
                 });
+        
+                if (app.params.searchbarHideDividers) {
+                    searchList.find('.item-divider, .list-group-title').each(function () {
+                        var title = $(this);
+                        var nextElements = title.nextAll('li');
+                        var hide = true;
+                        for (var i = 0; i < nextElements.length; i++) {
+                            var nextEl = $(nextElements[i]);
+                            if (nextEl.hasClass('list-group-title') || nextEl.hasClass('item-divider')) break;
+                            if (!nextEl.hasClass('hidden-by-searchbar')) {
+                                hide = false;
+                            }
+                        }
+                        if (hide) title.addClass('hidden-by-searchbar');
+                        else title.removeClass('hidden-by-searchbar');
+                    });
+                }
+                if (app.params.searchbarHideGroups) {
+                    searchList.find('.list-group').each(function () {
+                        var group = $(this);
+                        var notHidden = group.find('li:not(.hidden-by-searchbar)');
+                        if (notHidden.length === 0) {
+                            group.addClass('hidden-by-searchbar');
+                        }
+                        else {
+                            group.removeClass('hidden-by-searchbar');
+                        }
+                    });
+                }
         
                 searchList.trigger('search', {query: query, foundItems: foundItems});
         
@@ -25736,12 +25824,100 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
             }
                 
         };
-        app.destroySearchbar = function (searchbar) {
-            searchbar = $(searchbar);
+        app.destroySearchbar = function (pageContainer) {
+            pageContainer = $(pageContainer);
+            var searchbar = pageContainer.hasClass('searchbar') ? pageContainer : pageContainer.find('.searchbar');
             if (searchbar.length === 0) return;
             if (searchbar[0].f7DestroySearchbar) searchbar[0].f7DestroySearchbar();
         };
         
+        /*======================================================
+        ************   Messagebar   ************
+        ======================================================*/
+        app.initMessagebar = function (pageContainer) {
+            pageContainer = $(pageContainer);
+            var messagebar = pageContainer.hasClass('messagebar') ? pageContainer : pageContainer.find('.messagebar');
+            if (messagebar.length === 0) return;
+            var textarea = messagebar.find('textarea');
+            var pageContent = messagebar.parents('.page').find('.page-content');
+            var initialBarHeight = messagebar[0].offsetHeight;
+            var initialAreaHeight = textarea[0].offsetHeight;
+        
+            //Prevent submit
+            function preventSubmit(e) {
+                e.preventDefault();
+            }
+        
+            // Resize textarea
+            function sizeTextarea() {
+                
+                // Reset
+                textarea.css({'height': ''});
+                
+                var height = textarea[0].offsetHeight;
+                var diff = height - textarea[0].clientHeight;
+                var scrollHeight = textarea[0].scrollHeight;
+                // Update
+                if (scrollHeight + diff > height) {
+                    var newAreaHeight = scrollHeight + diff;
+                    var newBarHeight = initialBarHeight + (newAreaHeight - initialAreaHeight);
+                    var maxBarHeight = $(messagebar).parents('.view')[0].offsetHeight - 88;
+                    if (newBarHeight > maxBarHeight) {
+                        newBarHeight = maxBarHeight;
+                        newAreaHeight = newBarHeight - initialBarHeight + initialAreaHeight;
+                    }
+                    textarea.css('height', newAreaHeight + 'px');
+                    messagebar.css('height', newBarHeight + 'px');
+                    if (pageContent.length > 0) {
+                        pageContent.css('padding-bottom', newBarHeight + 'px');
+                        pageContent.scrollTop(pageContent[0].scrollHeight - pageContent[0].offsetHeight);
+                    }
+                }
+                else {
+                    if (pageContent.length > 0) {
+                        messagebar.css({'height': ''});
+                        pageContent.css({'padding-bottom': ''});
+                    }
+                }
+            }
+            var to;
+            function handleKey(e) {
+                clearTimeout(to);
+                to = setTimeout(function () {
+                    sizeTextarea();
+                }, 0);
+                    
+            }
+        
+            function attachEvents(destroy) {
+                var method = destroy ? 'off' : 'on';
+                messagebar[method]('submit', preventSubmit);
+                textarea[method]('change keydown keypress keyup paste cut', handleKey);
+            }
+            function detachEvents() {
+                attachEvents(true);
+            }
+            
+            messagebar[0].f7DestroyMessagebar = detachEvents;
+        
+            // Attach events
+            attachEvents();
+        
+            // Destroy on page remove
+            function pageBeforeRemove() {
+                detachEvents();
+                pageContainer.off('pageBeforeRemove', pageBeforeRemove);
+            }
+            if (pageContainer.hasClass('page')) {
+                pageContainer.on('pageBeforeRemove', pageBeforeRemove);
+            }
+        };
+        app.destroyMessagebar = function (pageContainer) {
+            pageContainer = $(pageContainer);
+            var messagebar = pageContainer.hasClass('messagebar') ? pageContainer : pageContainer.find('.messagebar');
+            if (messagebar.length === 0) return;
+            if (messagebar[0].f7DestroyMessagebar) messagebar[0].f7DestroyMessagebar();
+        };
         /*======================================================
         ************   XHR   ************
         ======================================================*/
@@ -25758,10 +25934,15 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
         // XHR
         app.xhr = false;
         app.get = function (url, callback) {
-            if (app.params.cache && url.indexOf('nocache') < 0 && app.params.cacheIgnore.indexOf(url) < 0) {
+            // should we ignore get params or not
+            var _url = url;
+            if (app.params.cacheIgnoreGetParameters && url.indexOf('?') >= 0) {
+                _url = url.split('?')[0];
+            }
+            if (app.params.cache && url.indexOf('nocache') < 0 && app.params.cacheIgnore.indexOf(_url) < 0) {
                 // Check is the url cached
                 for (var i = 0; i < app.cache.length; i++) {
-                    if (app.cache[i].url === url) {
+                    if (app.cache[i].url === _url) {
                         // Check expiration
                         if ((new Date()).getTime() - app.cache[i].time < app.params.cacheDuration) {
                             // Load from cache
@@ -25780,9 +25961,9 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
                     if (xhr.status === 200 || xhr.status === 0) {
                         callback(xhr.responseText, false);
                         if (app.params.cache) {
-                            app.removeFromCache(url);
+                            app.removeFromCache(_url);
                             app.cache.push({
-                                url: url,
+                                url: _url,
                                 time: (new Date()).getTime(),
                                 data: xhr.responseText
                             });
@@ -25863,6 +26044,12 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
         }
         
         app.triggerPageCallbacks = function (callbackName, pageName, pageData) {
+            var allPagesCallbacks = app.pageCallbacks[callbackName]['*'];
+            if (allPagesCallbacks) {
+                for (var j = 0; j < allPagesCallbacks.length; j++) {
+                    allPagesCallbacks[j](pageData);
+                }
+            }
             var callbacks = app.pageCallbacks[callbackName][pageName];
             if (!callbacks || callbacks.length === 0) return;
             for (var i = 0; i < callbacks.length; i++) {
@@ -25883,6 +26070,13 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
                 view: view,
                 from: position
             };
+        
+            // Store pagedata in page
+            pageContainer.f7PageData = pageData;
+        
+            // Update View's activePage
+            if (view) view.activePage = pageData;
+        
             // Before Init Callbacks
             app.pluginHook('pageBeforeInit', pageData);
             if (app.params.onPageBeforeInit) app.params.onPageBeforeInit(app, pageData);
@@ -25925,6 +26119,9 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
             var oldPage = params.oldPage,
                 newPage = params.newPage;
         
+            // Update page date
+            params.pageContainer.f7PageData = pageData;
+        
             if (callback === 'after') {
                 app.pluginHook('pageAfterAnimation', pageData);
                 if (app.params.onPageAfterAnimation) app.params.onPageAfterAnimation(app, pageData);
@@ -25935,6 +26132,9 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
             if (callback === 'before') {
                 // Add data-page on view
                 $(view.container).attr('data-page', pageData.name);
+        
+                // Update View's activePage
+                if (view) view.activePage = pageData;
         
                 // Hide/show navbar dynamically
                 if (newPage.hasClass('no-navbar') && !oldPage.hasClass('no-navbar')) {
@@ -25976,6 +26176,8 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
             if (app.initInfiniteScroll) app.initInfiniteScroll(pageContainer);
             // Init searchbar
             if (app.initSearchbar) app.initSearchbar(pageContainer);
+            // Init message bar
+            if (app.initMessagebar) app.initMessagebar(pageContainer);
         };
         
         // Load Page
@@ -26261,7 +26463,8 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
             }
             if (app.params.pushState)  {
                 if (typeof pushState === 'undefined') pushState = true;
-                if (pushState) history.pushState({content: content, url: '#content-' + view.history.length}, '', app.params.pushStateSeparator + '#content-' + view.history.length);
+                var pushStateRoot = app.params.pushStateRoot || '';
+                if (pushState) history.pushState({content: content, url: '#content-' + view.history.length}, '', pushStateRoot + app.params.pushStateSeparator + '#content-' + view.history.length);
             }
             preprocess(content, null, function (content) {
                 _load(view, null, content, animatePages);
@@ -26282,7 +26485,8 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
                 }
                 if (app.params.pushState)  {
                     if (typeof pushState === 'undefined') pushState = true;
-                    if (pushState) history.pushState({url: url}, '', app.params.pushStateSeparator + url);
+                    var pushStateRoot = app.params.pushStateRoot || '';
+                    if (pushState) history.pushState({url: url}, '', pushStateRoot + app.params.pushStateSeparator + url);
                 }
                 
                 preprocess(data, url, function (data) {
@@ -26491,12 +26695,12 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
                 }
             }
             // Update View's History
-            view.history.pop();
+            var previousURL = view.history.pop();
             
-            // Check current page is content based only
-            if (!view.params.domCache && view.url && view.url.indexOf('#content-') > -1 && (view.url in view.contentCache)) {
-                view.contentCache[view.url] = null;
-                delete view.contentCache[view.url];
+            // Check previous page is content based only and remove it from content cache
+            if (!view.params.domCache && previousURL && previousURL.indexOf('#content-') > -1 && (previousURL in view.contentCache)) {
+                view.contentCache[previousURL] = null;
+                delete view.contentCache[previousURL];
             }
             
             if (app.params.pushState) app.pushStateClearQueue();
@@ -26528,7 +26732,8 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
                     bold: true,
                     onClick: function (){},
                     close:false
-                }]
+                }],
+                onClick: function(index){}
             }
             */
             var buttonsHTML = '';
@@ -26561,6 +26766,7 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
                 $(el).on('click', function (e) {
                     if (params.buttons[index].close !== false) app.closeModal(modal);
                     if (params.buttons[index].onClick) params.buttons[index].onClick(modal, e);
+                    if (params.onClick) params.onClick(modal, index);
                 });
             });
             app.openModal(modal);
@@ -26601,15 +26807,73 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
             return app.modal({
                 text: text || '',
                 title: typeof title === 'undefined' ? app.params.modalTitle : title,
-                afterText: '<input type="text" class="modal-prompt-input">',
+                afterText: '<input type="text" class="modal-text-input">',
                 buttons: [
-                    {text: app.params.modalButtonCancel, onClick: function (modal) {
-                        if (callbackCancel) callbackCancel($(modal).find('.modal-prompt-input').val());
-                    }},
-                    {text: app.params.modalButtonOk, bold: true, onClick: function (modal) {
-                        if (callbackOk) callbackOk($(modal).find('.modal-prompt-input').val());
-                    }}
-                ]
+                    {
+                        text: app.params.modalButtonCancel,
+                    },
+                    {
+                        text: app.params.modalButtonOk,
+                        bold: true,
+                    }
+                ],
+                onClick: function (modal, index) {
+                    if (index === 0 && callbackCancel) callbackCancel($(modal).find('.modal-text-input').val());
+                    if (index === 1 && callbackOk) callbackOk($(modal).find('.modal-text-input').val());
+                }
+            });
+        };
+        app.modalLogin = function (text, title, callbackOk, callbackCancel) {
+            if (typeof title === 'function') {
+                callbackCancel = arguments[2];
+                callbackOk = arguments[1];
+                title = undefined;
+            }
+            return app.modal({
+                text: text || '',
+                title: typeof title === 'undefined' ? app.params.modalTitle : title,
+                afterText: '<input type="text" name="modal-username" placeholder="' + app.params.modalUsernamePlaceholder + '" class="modal-text-input modal-text-input-double"><input type="password" name="modal-password" placeholder="' + app.params.modalPasswordPlaceholder + '" class="modal-text-input modal-text-input-double">',
+                buttons: [
+                    {
+                        text: app.params.modalButtonCancel,
+                    },
+                    {
+                        text: app.params.modalButtonOk,
+                        bold: true,
+                    }
+                ],
+                onClick: function (modal, index) {
+                    var username = $(modal).find('.modal-text-input[name="modal-username"]').val();
+                    var password = $(modal).find('.modal-text-input[name="modal-password"]').val();
+                    if (index === 0 && callbackCancel) callbackCancel(username, password);
+                    if (index === 1 && callbackOk) callbackOk(username, password);
+                }
+            });
+        };
+        app.modalPassword = function (text, title, callbackOk, callbackCancel) {
+            if (typeof title === 'function') {
+                callbackCancel = arguments[2];
+                callbackOk = arguments[1];
+                title = undefined;
+            }
+            return app.modal({
+                text: text || '',
+                title: typeof title === 'undefined' ? app.params.modalTitle : title,
+                afterText: '<input type="password" name="modal-password" placeholder="' + app.params.modalPasswordPlaceholder + '" class="modal-text-input">',
+                buttons: [
+                    {
+                        text: app.params.modalButtonCancel,
+                    },
+                    {
+                        text: app.params.modalButtonOk,
+                        bold: true,
+                    }
+                ],
+                onClick: function (modal, index) {
+                    var password = $(modal).find('.modal-text-input[name="modal-password"]').val();
+                    if (index === 0 && callbackCancel) callbackCancel(password);
+                    if (index === 1 && callbackOk) callbackOk(password);
+                }
             });
         };
         app.showPreloader = function (title) {
@@ -26675,7 +26939,7 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
             if (typeof removeOnClose === 'undefined') removeOnClose = true;
             if (typeof modal === 'string' && modal.indexOf('<') >= 0) {
                 var _modal = document.createElement('div');
-                _modal.innerHTML = modal;
+                _modal.innerHTML = $.trim(modal);
                 if (_modal.childNodes.length > 0) {
                     modal = _modal.childNodes[0];
                     if (removeOnClose) modal.classList.add('remove-on-close');
@@ -26784,7 +27048,7 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
             if (typeof removeOnClose === 'undefined') removeOnClose = true;
             if (typeof modal === 'string' && modal.indexOf('<') >= 0) {
                 var _modal = document.createElement('div');
-                _modal.innerHTML = modal;
+                _modal.innerHTML = $.trim(modal);
                 if (_modal.childNodes.length > 0) {
                     modal = _modal.childNodes[0];
                     if (removeOnClose) modal.classList.add('remove-on-close');
@@ -26801,21 +27065,35 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
             app.openModal(modal);
             return modal[0];
         };
+        app.loginScreen = function (modal) {
+            if (!modal) modal = '.login-screen';
+            modal = $(modal);
+            if (modal.length === 0) return false;
+            modal.show();
+            if (modal.find('.' + app.params.viewClass).length > 0) {
+                app.sizeNavbars(modal.find('.' + app.params.viewClass)[0]);
+            }
+            app.openModal(modal);
+            return modal[0];
+        };
         app.openModal = function (modal) {
             modal = $(modal);
         
             var isPopover = modal.hasClass('popover');
             var isPopup = modal.hasClass('popup');
-            if (!isPopover && !isPopup) modal.css({marginTop: - Math.round(modal.outerHeight() / 2) + 'px'});
+            var isLoginScreen = modal.hasClass('login-screen');
+            if (!isPopover && !isPopup && !isLoginScreen) modal.css({marginTop: - Math.round(modal.outerHeight() / 2) + 'px'});
         
-            if ($('.modal-overlay').length === 0 && !isPopup) {
-                $('body').append('<div class="modal-overlay"></div>');
+            var overlay;
+            if (!isLoginScreen) {
+                if ($('.modal-overlay').length === 0 && !isPopup) {
+                    $('body').append('<div class="modal-overlay"></div>');
+                }
+                if ($('.popup-overlay').length === 0 && isPopup) {
+                    $('body').append('<div class="popup-overlay"></div>');
+                }
+                overlay = isPopup ? $('.popup-overlay') : $('.modal-overlay');
             }
-            if ($('.popup-overlay').length === 0 && isPopup) {
-                $('body').append('<div class="popup-overlay"></div>');
-            }
-            var overlay = isPopup ? $('.popup-overlay') : $('.modal-overlay');
-        
         
             //Make sure that styles are applied, trigger relayout;
             var clientLeft = modal[0].clientLeft;
@@ -26824,7 +27102,7 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
             modal.trigger('open');
         
             // Classes for transition in
-            overlay.addClass('modal-overlay-visible');
+            if (!isLoginScreen) overlay.addClass('modal-overlay-visible');
             modal.removeClass('modal-out').addClass('modal-in').transitionEnd(function (e) {
                 if (modal.hasClass('modal-out')) modal.trigger('closed');
                 else modal.trigger('opened');
@@ -26835,6 +27113,8 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
             modal = $(modal || '.modal-in');
             var isPopover = modal.hasClass('popover');
             var isPopup = modal.hasClass('popup');
+            var isLoginScreen = modal.hasClass('login-screen');
+        
             var removeOnClose = modal.hasClass('remove-on-close');
         
             var overlay = isPopup ? $('.popup-overlay') : $('.modal-overlay');
@@ -26842,14 +27122,18 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
         
             modal.trigger('close');
             
-        
             if (!isPopover) {
                 modal.removeClass('modal-in').addClass('modal-out').transitionEnd(function (e) {
                     if (modal.hasClass('modal-out')) modal.trigger('closed');
                     else modal.trigger('opened');
-                    if (!isPopup) modal.remove();
-                    if (isPopup) modal.removeClass('modal-out').hide();
-                    if (removeOnClose) modal.remove();
+                    
+                    if (isPopup || isLoginScreen) {
+                        modal.removeClass('modal-out').hide();
+                        if (removeOnClose && modal.length > 0) modal.remove();
+                    }
+                    else {
+                        modal.remove();
+                    }
                 });
             }
             else {
@@ -27153,14 +27437,6 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
         };
         app.addMessage = function (props) {
             props = props || {};
-            /*
-            {
-                text : 'Message text',
-                day : 'Mon',
-                time : '14:42',
-                type : 'sent' // or 'received'
-            }
-            */
             props.type = props.type || 'sent';
             if (!props.text || props.length === 0) return false;
             var messagesContent = $('.messages-content');
@@ -27171,28 +27447,66 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
             if (props.day) {
                 html += '<div class="messages-date">' + props.day + (props.time ? ',' : '') + (props.time ? ' <span>' + props.time + '</span>' : '') + '</div>';
             }
-            var isPic = props.text.indexOf('<img') >= 0;
-            var messageClass = 'message' + ' message-' + props.type + (isPic ? ' message-pic' : '') + ' message-appear';
-            html += '<div class="' + messageClass + '">' + props.text + '</div>';
+            var isPic = props.text.indexOf('<img') >= 0 ? 'message-pic' : '';
+            var withAvatar = props.avatar ? 'message-with-avatar' : '';
+            var messageClass = 'message' + ' message-' + props.type + isPic  + ' ' + withAvatar + ' message-appear';
+            html += '<div class="' + messageClass + '">' +
+                        (props.name ? '<div class="message-name">' + props.name + '</div>' : '') +
+                        '<div class="message-text">' + props.text + '</div>' +
+                        (props.avatar ? '<div class="message-avatar" style="background-image:url(' + props.avatar + ')"></div>' : '') +
+                    '</div>';
             if (newOnTop) messages.prepend(html);
             else messages.append(html);
             app.updateMessagesAngles(messages);
             app.scrollMessagesContainer(messagesContent);
         };
         app.updateMessagesAngles = function (messages) {
+            messages.find('.message').each(function () {
+                var message = $(this);
+                if (message.find('.message-text img').length > 0) message.addClass('message-pic');
+                if (message.find('.message-avatar').length > 0) message.addClass('message-with-avatar');
+            });
             messages.find('.message-sent').each(function () {
                 var message = $(this);
-                if (!message.next().hasClass('message-sent')) {
+                var next = message.next('.message-sent');
+                var prev = message.prev('.message-sent');
+                if (next.length === 0) {
                     message.addClass('message-last');
                 }
                 else message.removeClass('message-last');
+        
+                if (prev.length === 0) {
+                    message.addClass('message-first');
+                }
+                else message.removeClass('message-first');
+                // Search for changed names
+                if (prev.length > 0 && prev.find('.message-name').length > 0 && message.find('.message-name').length > 0) {
+                    if (prev.find('.message-name').text() !== message.find('.message-name').text()) {
+                        prev.addClass('message-last');
+                        message.addClass('message-first');
+                    }
+                }
             });
             messages.find('.message-received').each(function () {
                 var message = $(this);
-                if (!message.next().hasClass('message-received')) {
+                var next = message.next('.message-received');
+                var prev = message.prev('.message-received');
+                if (next.length === 0) {
                     message.addClass('message-last');
                 }
                 else message.removeClass('message-last');
+        
+                if (prev.length === 0) {
+                    message.addClass('message-first');
+                }
+                else message.removeClass('message-first');
+                // Search for changed names
+                if (prev.length > 0 && prev.find('.message-name').length > 0 && message.find('.message-name').length > 0) {
+                    if (prev.find('.message-name').text() !== message.find('.message-name').text()) {
+                        prev.addClass('message-last');
+                        message.addClass('message-first');
+                    }
+                }
             });
         };
         app.scrollMessagesContainer = function (messagesContent) {
@@ -27203,21 +27517,7 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
             var currentScroll = messagesContent[0].scrollTop;
             var newScroll = newOnTop ? 0 : messages.height() - messagesContent.height();
             if (newScroll === currentScroll) return;
-            var step = (newScroll - currentScroll) / 12;
-            function animScroll() {
-                if (messagesContent[0].scrollTop > newScroll && newOnTop) {
-                    messagesContent[0].scrollTop = messagesContent[0].scrollTop + Math.floor(step);
-                    app._animFrame(animScroll);
-                }
-                else if (messagesContent[0].scrollTop < newScroll && !newOnTop) {
-                    messagesContent[0].scrollTop = messagesContent[0].scrollTop + Math.floor(step);
-                    app._animFrame(animScroll);
-                }
-                else {
-                    messagesContent[0].scrollTop = newScroll;
-                }
-            }
-            app._animFrame(animScroll);
+            messagesContent.scrollTop(newScroll, 300);
         };
         
         /*===============================================================================
@@ -27411,7 +27711,7 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
                     app.allowSwipeout = true;
                 });
         
-            if (app.swipeoutOpenedEl[0] === el[0]) app.swipeoutOpenedEl = undefined;
+            if (app.swipeoutOpenedEl && app.swipeoutOpenedEl[0] === el[0]) app.swipeoutOpenedEl = undefined;
         };
         app.swipeoutDelete = function (el) {
             el = $(el);
@@ -27564,14 +27864,14 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
                 var select = $select[0];
                 if (select.length === 0) return;
         
-                var valueText;
+                var valueText = [];
                 for (var i = 0; i < select.length; i++) {
-                    if (select[i].selected) valueText = select[i].textContent.trim();
+                    if (select[i].selected) valueText.push(select[i].textContent.trim());
                 }
         
                 var itemAfter = smartSelect.find('.item-after');
                 if (itemAfter.length === 0) {
-                    smartSelect.find('.item-inner').append('<div class="item-after">' + valueText + '</div>');
+                    smartSelect.find('.item-inner').append('<div class="item-after">' + valueText.join(', ') + '</div>');
                 }
                 else {
                     itemAfter.text(valueText);
@@ -27592,29 +27892,45 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
         
             // Collect all values
             var select = smartSelect.find('select')[0];
+            if (select.disabled || smartSelect.hasClass('disabled') || $(select).hasClass('disabled')) {
+                return;
+            }
             var values = {};
             values.length = select.length;
             for (var i = 0; i < select.length; i++) {
                 values[i] = {
                     value: select[i].value,
                     text: select[i].textContent.trim(),
-                    selected: select[i].selected
+                    selected: select[i].selected,
+                    group: $(select[i]).parent('optgroup')[0],
+                    disabled: select[i].disabled
                 };
             }
         
             var pageTitle = smartSelect.attr('data-pagetitle') || smartSelect.find('.item-title').text();
             var backText = smartSelect.attr('data-backtext') || app.params.smartSelectBackText;
+            var backOnSelect = smartSelect.attr('data-backonselect') ? (smartSelect.attr('data-backonselect') === 'true' ? true : false) : app.params.smartSelectBackOnSelect;
         
             // Generate dynamic page layout
             var id = (new Date()).getTime();
-            var radiosName = 'radio-' + id;
-            var radiosHTML = '';
+            var inputType = select.multiple ? 'checkbox' : 'radio';
+            var inputName = inputType + '-' + id;
+            var inputsHTML = '';
+            var previousGroup;
             for (var j = 0; j < values.length; j++) {
+                if (values[j].disabled) continue;
                 var checked = values[j].selected ? 'checked' : '';
-                radiosHTML +=
+                if (values[j].group) {
+                    if (values[j].group !== previousGroup) {
+                        inputsHTML += '<li class="item-divider">' + values[j].group.label + '</li>';
+                        previousGroup = values[j].group;
+                    }
+                }
+                inputsHTML +=
                     '<li>' +
-                        '<label class="label-radio item-content">' +
-                            '<input type="radio" name="' + radiosName + '" value="' + values[j].value + '" ' + checked + '>' +
+                        '<label class="label-' + inputType + ' item-content">' +
+                            '<input type="' + inputType + '" name="' + inputName + '" value="' + values[j].value + '" ' + checked + '>' +
+                            (inputType === 'checkbox' ? '<div class="item-media"><i class="icon icon-form-checkbox"></i></div>' : '') +
                             '<div class="item-inner">' +
                                 '<div class="item-title">' + values[j].text + '</div>' +
                             '</div>' +
@@ -27634,7 +27950,7 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
             if (smartSelect.parents('.navbar-through').length > 0) navbarLayout = 'through';
             if (smartSelect.parents('.navbar-fixed').length > 0) navbarLayout = 'fixed';
             // Page Layout
-            var pageName = 'smart-select-' + radiosName;
+            var pageName = 'smart-select-' + inputName;
         
             var noToolbar = smartSelect.parents('.page').hasClass('no-toolbar') ? 'no-toolbar' : '';
             var noNavbar = smartSelect.parents('.page').hasClass('no-navbar') ? 'no-navbar' : '';
@@ -27659,14 +27975,14 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
             var pageHTML =
                 (navbarLayout === 'through' ? navbarHTML : '') +
                 '<div class="pages">' +
-                '  <div data-page="' + pageName + '" class="page ' + noNavbar + ' ' + noToolbar + '">' +
+                '  <div data-page="' + pageName + '" class="page smart-select-page' + noNavbar + ' ' + noToolbar + '">' +
                      (navbarLayout === 'fixed' ? navbarHTML : '') +
                      (useSearchbar ? searchbarHTML : '') +
                 '    <div class="page-content">' +
                        (navbarLayout === 'static' ? navbarHTML : '') +
                 '      <div class="list-block smart-select-list-' + id + '">' +
                 '        <ul>' +
-                            radiosHTML +
+                            inputsHTML +
                 '        </ul>' +
                 '      </div>' +
                 '    </div>' +
@@ -27674,20 +27990,40 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
                 '</div>';
         
             // Event Listeners on new page
-            function handleRadios(e) {
+            function handleInputs(e) {
                 var page = e.detail.page;
                 if (page.name === pageName) {
-                    $(document).off('pageInit', handleRadios);
-                    $(page.container).find('input[name="' + radiosName + '"]').on('change', function () {
-                        var value = this.value;
-                        select.value = value;
+                    $(document).off('pageInit', handleInputs);
+                    $(page.container).find('input[name="' + inputName + '"]').on('change', function () {
+                        var input = this;
+                        var value = input.value;
+                        var optionText = [];
+                        if (input.type === 'checkbox') {
+                            var values = [];
+                            for (var i = 0; i < select.options.length; i++) {
+                                var option = select.options[i];
+                                if (option.value === value) {
+                                    option.selected = input.checked;
+                                }
+                                if (option.selected) {
+                                    optionText.push(option.textContent.trim());
+                                }
+                            }
+                        }
+                        else {
+                            optionText = [smartSelect.find('option[value="' + value + '"]').text()];
+                            select.value = value;
+                        }
+                            
                         $(select).trigger('change');
-                        var optionText = smartSelect.find('option[value="' + value + '"]').text();
-                        smartSelect.find('.item-after').text(optionText);
+                        smartSelect.find('.item-after').text(optionText.join(', '));
+                        if (backOnSelect && inputType === 'radio') {
+                            view.goBack();
+                        }
                     });
                 }
             }
-            $(document).on('pageInit', handleRadios);
+            $(document).on('pageInit', handleInputs);
         
             // Load content
             view.loadContent(pageHTML);
@@ -27854,6 +28190,9 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
             var tabs = newTab.parent('.tabs');
             if (tabs.length === 0) return false;
         
+            // Return swipeouts in hidden tabs
+            app.allowSwipeout = true;
+        
             // Animated tabs
             var isAnimatedTabs = tabs.parent().hasClass('tabs-animated-wrap');
             if (isAnimatedTabs) {
@@ -27879,8 +28218,15 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
             // Update class on tab-links
             if (tabLink) tabLink = $(tabLink);
             else {
+                // Search by id
                 if (typeof tab === 'string') tabLink = $('.tab-link[href="' + tab + '"]');
                 else tabLink = $('.tab-link[href="#' + newTab.attr('id') + '"]');
+                // Search by data-tab
+                if (tabLink.length === 0) {
+                    $('[data-tab]').each(function () {
+                        if (newTab.is($(this).attr('data-tab'))) tabLink = $(this);
+                    });
+                }
             }
             if (tabLink.length === 0) return;
         
@@ -27888,6 +28234,54 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
             tabLink.addClass('active');
             
             return true;
+        };
+        /*===============================================================================
+        ************   Accordion   ************
+        ===============================================================================*/
+        app.accordionToggle = function (item) {
+            item = $(item);
+            if (item.length === 0) return;
+            if (item.hasClass('accordion-item-expanded')) app.accordionClose(item);
+            else app.accordionOpen(item);
+        };
+        app.accordionOpen = function (item) {
+            item = $(item);
+            var list = item.parents('.accordion-list');
+            var content = item.find('.accordion-item-content');
+            var expandedItem = list.find('.accordion-item-expanded');
+            if (expandedItem.length > 0) {
+                app.accordionClose(expandedItem);
+            }
+            content.css('height', content[0].scrollHeight + 'px').transitionEnd(function () {
+                if (item.hasClass('accordion-item-expanded')) {
+                    content.transition(0);
+                    content.css('height', 'auto');
+                    var clientLeft = content[0].clientLeft;
+                    content.transition('');
+                }
+                else content.css('height', '');
+            });
+            item.addClass('accordion-item-expanded');
+        };
+        app.accordionClose = function (item) {
+            item = $(item);
+            var content = item.find('.accordion-item-content');
+            item.removeClass('accordion-item-expanded');
+            content.transition(0);
+            content.css('height', content[0].scrollHeight + 'px');
+            // Relayout
+            var clientLeft = content[0].clientLeft;
+            // Close
+            content.transition('');
+            content.css('height', '').transitionEnd(function () {
+                if (item.hasClass('accordion-item-expanded')) {
+                    content.transition(0);
+                    content.css('height', 'auto');
+                    var clientLeft = content[0].clientLeft;
+                    content.transition('');
+                }
+                else content.css('height', '');
+            });
         };
         /*===============================================================================
         ************   Fast Clicks   ************
@@ -27898,6 +28292,9 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
             var touchStartX, touchStartY, touchStartTime, targetElement, trackClick, activeSelection, scrollParent, lastClickTime, isMoved;
         
             function targetNeedsFocus(el) {
+                if (document.activeElement === el) {
+                    return false;
+                }
                 var tag = el.nodeName.toLowerCase();
                 var skipInputs = ('button checkbox file image radio submit').split(' ');
                 if (el.disabled || el.readOnly) return false;
@@ -27927,9 +28324,10 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
                 if (e.targetTouches.length > 1) {
                     return true;
                 }
+        
                 if (app.device.os === 'ios') {
                     var selection = window.getSelection();
-                    if (selection.rangeCount && !selection.isCollapsed) {
+                    if (selection.rangeCount && (!selection.isCollapsed || document.activeElement === selection.focusNode)) {
                         activeSelection = true;
                         return true;
                     }
@@ -27937,6 +28335,7 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
                         activeSelection = false;
                     }
                 }
+        
                 trackClick = true;
                 targetElement = e.target;
                 touchStartTime = (new Date()).getTime();
@@ -27970,6 +28369,10 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
                     return true;
                 }
         
+                if (document.activeElement === e.target) {
+                    return true;
+                }
+        
                 if (!activeSelection) {
                     e.preventDefault();
                 }
@@ -27990,7 +28393,9 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
                 }
         
                 // Trigger focus when required
-                if (targetNeedsFocus(targetElement)) targetElement.focus();
+                if (targetNeedsFocus(targetElement)) {
+                    targetElement.focus();
+                }
         
                 e.preventDefault();
                 var touch = e.changedTouches[0];
@@ -28012,23 +28417,6 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
                 targetElement = null;
             }
         
-            function onMouse(e) {
-                if (!targetElement) {
-                    return true;
-                }
-                if (e.forwardedTouchEvent) {
-                    return true;
-                }
-                if (!e.cancelable) {
-                    return true;
-                }
-                e.stopImmediatePropagation();
-                e.stopPropagation();
-                e.preventDefault();
-        
-                return false;
-        
-            }
             function handleClick(e) {
                 var allowClick = false;
         
@@ -28043,6 +28431,9 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
                 }
         
                 if (!targetElement) {
+                    allowClick =  true;
+                }
+                if (document.activeElement === targetElement) {
                     allowClick =  true;
                 }
                 if (e.forwardedTouchEvent) {
@@ -28082,10 +28473,21 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
                 var clicked = $(this);
                 var url = clicked.attr('href');
                 var isLink = clicked[0].nodeName.toLowerCase() === 'a';
-                // External
-                if (isLink && clicked.hasClass('external')) {
-                    return;
+        
+                // Check if link is external 
+                if (isLink) {
+                    /*jshint shadow:true */
+                    for (var i = 0; i < app.params.externalLinks.length; i++) {
+                        if (clicked.hasClass(app.params.externalLinks[i])) {
+                            return;
+                        }
+        
+                        if (clicked[0].rel === app.params.externalLinks[i]) {
+                            return;
+                        }
+                    }
                 }
+        
                 // Smart Select
                 if (clicked.hasClass('smart-select')) {
                     if (app.smartSelectOpen) app.smartSelectOpen(clicked);
@@ -28119,6 +28521,9 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
                     else popover = '.popover';
                     app.popover(popover, clicked);
                 }
+                if (clicked.hasClass('close-popover')) {
+                    app.closeModal('.popover.modal-in');
+                }
                 // Popup
                 var popup;
                 if (clicked.hasClass('open-popup')) {
@@ -28131,12 +28536,24 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
                 if (clicked.hasClass('close-popup')) {
                     app.closeModal('.popup.modal-in');
                 }
+                // Login Screen
+                var loginScreen;
+                if (clicked.hasClass('open-login-screen')) {
+                    if (clicked.attr('data-login-screen')) {
+                        loginScreen = clicked.attr('data-login-screen');
+                    }
+                    else loginScreen = '.login-screen';
+                    app.loginScreen(loginScreen);
+                }
+                if (clicked.hasClass('close-login-screen')) {
+                    app.closeModal('.login-screen.modal-in');
+                }
                 // Close Modal
                 if (clicked.hasClass('modal-overlay')) {
                     if ($('.modal.modal-in').length > 0 && app.params.modalCloseByOutside)
-                        app.closeModal();
+                        app.closeModal('.modal.modal-in');
                     if ($('.actions-modal.modal-in').length > 0 && app.params.actionsCloseByOutside)
-                        app.closeModal();
+                        app.closeModal('.actions-modal.modal-in');
                     
                     if ($('.popover.modal-in').length > 0) app.closeModal('.popover.modal-in');
                 }
@@ -28147,7 +28564,7 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
         
                 // Tabs
                 if (clicked.hasClass('tab-link')) {
-                    app.showTab(clicked.attr('href'), clicked);
+                    app.showTab(clicked.attr('data-tab') || clicked.attr('href'), clicked);
                 }
                 // Swipeout Delete
                 if (clicked.hasClass('swipeout-delete')) {
@@ -28180,6 +28597,12 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
                 if (clicked.hasClass('close-sortable')) {
                     app.sortableClose(clicked.data('sortable'));
                 }
+                // Accordion
+                if (clicked.hasClass('accordion-item-toggle') || (clicked.hasClass('item-link') && clicked.parent().hasClass('accordion-item'))) {
+                    var accordionItem = clicked.parents('.accordion-item');
+                    if (accordionItem.length === 0) accordionItem = clicked.parents('li');
+                    app.accordionToggle(accordionItem);
+                }
                 // Load Page
                 if (app.params.ajaxLinks && !clicked.is(app.params.ajaxLinks) || !isLink) {
                     return;
@@ -28211,7 +28634,7 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
                     else view.loadPage(clicked.attr('href'), animatePages);
                 }
             }
-            $(document).on('click', 'a, .open-panel, .close-panel, .panel-overlay, .modal-overlay, .popup-overlay, .swipeout-delete, .close-popup, .open-popup, .open-popover, .smart-select, .toggle-sortable, .open-sortable, .close-sortable', handleClicks);
+            $(document).on('click', 'a, .open-panel, .close-panel, .panel-overlay, .modal-overlay, .popup-overlay, .swipeout-delete, .close-popup, .open-popup, .open-popover, .open-login-screen, .close-login-screen .smart-select, .toggle-sortable, .open-sortable, .close-sortable, .accordion-item-toggle', handleClicks);
         };
         
         /*======================================================
@@ -28666,7 +29089,6 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
             s.onTouchMove = function (e) {
                 if (s.params.onTouchMove) s.params.onTouchMove(s, e);
                 s.allowClick = false;
-                if (!isTouched) return;
                 if (e.targetTouches && e.targetTouches.length > 1) return;
                 
                 touchesCurrent.x = e.type === 'touchmove' ? e.targetTouches[0].pageX : e.pageX;
@@ -28675,6 +29097,10 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
                 if (typeof isScrolling === 'undefined') {
                     isScrolling = !!(isScrolling || Math.abs(touchesCurrent.y - touchesStart.y) > Math.abs(touchesCurrent.x - touchesStart.x));
                 }
+                if ((isH && isScrolling) || (!isH && !isScrolling))  {
+                    if (s.params.onOppositeTouchMove) s.params.onOppositeTouchMove(s, e);
+                }
+                if (!isTouched) return;
                 if ((isH && isScrolling) || (!isH && !isScrolling))  {
                     isTouched = false;
                     return;
@@ -28713,6 +29139,7 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
                     if (timeDiff < 300 && (touchEndTime - lastClickTime) > 300) {
                         if (clickTimeout) clearTimeout(clickTimeout);
                         clickTimeout = setTimeout(function () {
+                            if (!s) return;
                             if (s.params.paginationHide && s.paginationContainer) {
                                 s.paginationContainer.toggleClass('slider-pagination-hidden');
                             }
@@ -28743,6 +29170,7 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
                     s.allowClick = true;
                 }
                 setTimeout(function () {
+                    if (!s) return;
                     s.allowClick = true;
                 }, 100);
                 
@@ -28976,10 +29404,12 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
                 maxZoom: 3,
                 minZoom: 1,
                 exposition: true,
+                expositionHideCaptions: false,
                 type: 'standalone',
                 navbar: true,
                 toolbar: true,
                 theme: 'light',
+                swipeToClose: true,
                 backLinkText: 'Close'
             };
             
@@ -29024,27 +29454,70 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
                                 '<div class="view navbar-fixed toolbar-fixed">' +
                                     '{{navbar}}' +
                                     '<div data-page="photo-browser-slides" class="page no-toolbar {{noNavbar}} toolbar-fixed navbar-fixed">' +
+                                        '{{toolbar}}' +
+                                        '{{captions}}' +
                                         '<div class="photo-browser-slider-container slider-container">' +
                                             '<div class="photo-browser-slider-wrapper slider-wrapper">' +
                                                 '{{photos}}' +
                                             '</div>' +
                                         '</div>' +
-                                        '{{toolbar}}' +
                                     '</div>' +
                                 '</div>' +
                             '</div>';
         
             var photoTemplate = pb.params.photoTemplate || '<div class="photo-browser-slide slider-slide"><span class="photo-browser-zoom-container"><img src="{{url}}"></span></div>';
+            var captionsTheme = pb.params.captionsTheme || pb.params.theme;
+            var captionsTemplate = pb.params.captionsTemplate || '<div class="photo-browser-captions photo-browser-captions-' + captionsTheme + '">{{captions}}</div>';
+            var captionTemplate = pb.params.captionTemplate || '<div class="photo-browser-caption" data-caption-index="{{captionIndex}}">{{caption}}</div>';
         
+            var objectTemplate = pb.params.objectTemplate || '<div class="photo-browser-slide photo-browser-object-slide slider-slide">{{html}}</div>';
             var photosHtml = '';
+            var captionsHtml = '';
             for (i = 0; i < pb.params.photos.length; i ++) {
-                photosHtml += photoTemplate.replace(/{{url}}/g, pb.params.photos[i]);
+                var photo = pb.params.photos[i];
+                var thisTemplate = '';
+        
+                //check if photo is a string or string-like object, for backwards compatibility 
+                if (typeof(photo) === 'string' || photo instanceof String) {
+        
+                    //check if "photo" is html object
+                    if (photo.indexOf('<') >= 0 || photo.indexOf('>') >= 0) {
+                        thisTemplate = objectTemplate.replace(/{{html}}/g, photo);
+                    } else {
+                        thisTemplate = photoTemplate.replace(/{{url}}/g, photo);
+                    }
+        
+                    //photo is a string, thus has no caption, so remove the caption template placeholder
+                    // captionsHtml += captionTemplate.replace(/{{caption}}/g, '');
+        
+                    //otherwise check if photo is an object with a url property
+                } else if (typeof(photo) === 'object') {
+        
+                    //check if "photo" is html object
+                    if (photo.hasOwnProperty('html') && photo.html.length > 0) {
+                        thisTemplate = objectTemplate.replace(/{{html}}/g, photo.html);
+                    } else if (photo.hasOwnProperty('url') && photo.url.length > 0) {
+                        thisTemplate = photoTemplate.replace(/{{url}}/g, photo.url);
+                    }
+        
+                    //check if photo has a caption
+                    if (photo.hasOwnProperty('caption') && photo.caption.length > 0) {
+                        captionsHtml += captionTemplate.replace(/{{caption}}/g, photo.caption).replace(/{{captionIndex}}/g, i);
+                    } else {
+                        thisTemplate = thisTemplate.replace(/{{caption}}/g, '');
+                        // captionsHtml += captionTemplate.replace(/{{caption}}/g, '');
+                    }
+                }
+        
+                photosHtml += thisTemplate;
+        
             }
         
             var htmlTemplate = template
                                 .replace('{{navbar}}', (pb.params.navbar ? navbarTemplate : ''))
                                 .replace('{{noNavbar}}', (pb.params.navbar ? '' : 'no-navbar'))
                                 .replace('{{photos}}', photosHtml)
+                                .replace('{{captions}}', captionsTemplate.replace(/{{captions}}/g, captionsHtml))
                                 .replace('{{toolbar}}', (pb.params.toolbar ? toolbarTemplate : ''));
         
             pb.activeSlideIndex = pb.params.initialSlide;
@@ -29127,8 +29600,10 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
                 pb.sliderContainer = pb.container.find('.photo-browser-slider-container');
                 pb.sliderWrapper = pb.container.find('.photo-browser-slider-wrapper');
                 pb.slides = pb.container.find('.photo-browser-slide');
+                pb.captionsContainer = pb.container.find('.photo-browser-captions');
+                pb.captions = pb.container.find('.photo-browser-caption');
                 
-                pb.slider = app.slider(pb.sliderContainer, {
+                var sliderSettings = {
                     nextButton: pb.params.nextButton || '.photo-browser-next',
                     prevButton: pb.params.prevButton || '.photo-browser-prev',
                     indexButton: pb.params.indexButton,
@@ -29161,6 +29636,19 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
                         else {
                             $('.photo-browser-prev, .photo-browser-next').removeClass('photo-browser-link-inactive');
                         }
+        
+                        // Update captions
+                        if (pb.captions.length > 0) {
+                            pb.captionsContainer.find('.photo-browser-caption-active').removeClass('photo-browser-caption-active');
+                            pb.captionsContainer.find('[data-caption-index="' + pb.activeSlideIndex + '"]').addClass('photo-browser-caption-active');
+                        }
+        
+                        // Stop Video
+                        var previousSlideVideo = slider.slides.eq(slider.previousSlideIndex).find('video');
+                        if (previousSlideVideo.length > 0) {
+                            if ('pause' in previousSlideVideo[0]) previousSlideVideo[0].pause();
+                        }
+                        // Callback
                         if (pb.params.onSlideChangeStart) pb.params.onSlideChangeStart(slider);
                     },
                     onSlideChangeEnd: function (slider) {
@@ -29172,13 +29660,17 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
                             scale = currentScale = 1;
                         }
                         if (pb.params.onSlideChangeEnd) pb.params.onSlideChangeEnd(slider);
-                    }
-                });
+                    },
+                };
         
+                if (pb.params.swipeToClose && pb.params.type !== 'page') {
+                    sliderSettings.onTouchStart = pb.swipeCloseTouchStart;
+                    sliderSettings.onOppositeTouchMove = pb.swipeCloseTouchMove;
+                    sliderSettings.onTouchEnd = pb.swipeCloseTouchEnd;
+                }
+        
+                pb.slider = app.slider(pb.sliderContainer, sliderSettings);
                 pb.attachEvents();
-        
-                
-        
             };
             pb.attachEvents = function (detach) {
                 var action = detach ? 'off' : 'on';
@@ -29205,14 +29697,17 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
             pb.exposed = false;
             pb.toggleExposition = function () {
                 if (pb.container) pb.container.toggleClass('photo-browser-exposed');
+                if (pb.params.expositionHideCaptions) pb.captionsContainer.toggleClass('photo-browser-captions-exposed');
                 pb.exposed = !pb.exposed;
             };
             pb.expositionOn = function () {
                 if (pb.container) pb.container.addClass('photo-browser-exposed');
+                if (pb.params.expositionHideCaptions) pb.captionsContainer.addClass('photo-browser-captions-exposed');
                 pb.exposed = true;
             };
             pb.expositionOff = function () {
                 if (pb.container) pb.container.removeClass('photo-browser-exposed');
+                if (pb.params.expositionHideCaptions) pb.captionsContainer.removeClass('photo-browser-captions-exposed');
                 pb.exposed = false;
             };
             
@@ -29373,6 +29868,64 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
                 imageCurrentY = Math.max(Math.min(imageCurrentY, imageMaxY), imageMinY);
         
                 gestureImgWrap.transition(momentumDuration).transform('translate3d(' + imageCurrentX + 'px, ' + imageCurrentY + 'px,0)');
+            };
+        
+            // Swipe Up To Close
+            var swipeToCloseIsTouched = false;
+            var allowSwipeToClose = true;
+            var swipeToCloseDiff, swipeToCloseStart, swipeToCloseCurrent, swipeToCloseStarted = false, swipeToCloseActiveSlide, swipeToCloseTimeStart;
+            pb.swipeCloseTouchStart = function (slider, e) {
+                if (!allowSwipeToClose) return;
+                swipeToCloseIsTouched = true;
+            };
+            pb.swipeCloseTouchMove = function (slider, e) {
+                if (!swipeToCloseIsTouched) return;
+                if (!swipeToCloseStarted) {
+                    swipeToCloseStarted = true;
+                    swipeToCloseStart = e.type === 'touchmove' ? e.targetTouches[0].pageY : e.pageY;
+                    swipeToCloseActiveSlide = pb.slider.slides.eq(pb.slider.activeSlideIndex);
+                    swipeToCloseTimeStart = (new Date()).getTime();
+                }
+                e.preventDefault();
+                swipeToCloseCurrent = e.type === 'touchmove' ? e.targetTouches[0].pageY : e.pageY;
+                swipeToCloseDiff = swipeToCloseStart - swipeToCloseCurrent;
+                var opacity = 1 - Math.abs(swipeToCloseDiff) / 300;
+                swipeToCloseActiveSlide.transform('translate3d(0,' + (-swipeToCloseDiff) + 'px,0)');
+                pb.slider.container.css('opacity', opacity).transition(0);
+            };
+            pb.swipeCloseTouchEnd = function (slider, e) {
+                swipeToCloseIsTouched = false;
+                if (!swipeToCloseStarted) {
+                    swipeToCloseStarted = false;
+                    return;
+                }
+                swipeToCloseStarted = false;
+                allowSwipeToClose = false;
+                var diff = Math.abs(swipeToCloseDiff);
+                var timeDiff = (new Date()).getTime() - swipeToCloseTimeStart;
+                if ((timeDiff < 300 && diff > 20) || (timeDiff >= 300 && diff > 100)) {
+                    setTimeout(function () {
+                        if (pb.params.type === 'standalone') {
+                            pb.close();
+                        }
+                        if (pb.params.type === 'popup') {
+                            app.closeModal(pb.popup);
+                        }
+                        allowSwipeToClose = true;
+                    }, 0);
+                    return;
+                }
+                if (diff !== 0) {
+                    swipeToCloseActiveSlide.addClass('transitioning').transitionEnd(function () {
+                        allowSwipeToClose = true;
+                        swipeToCloseActiveSlide.removeClass('transitioning');
+                    });
+                }
+                else {
+                    allowSwipeToClose = true;
+                }
+                pb.slider.container.css('opacity', '').transition('');
+                swipeToCloseActiveSlide.transform('');
             };
         
             return pb;
@@ -29640,6 +30193,11 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
                 return this;
             }
         },
+        removeAttr: function (attr) {
+            for (var i = 0; i < this.length; i++) {
+                this[i].removeAttribute(attr);
+            }
+        },
         prop: function (prop, value) {
             if (typeof value === 'undefined') {
                 if (this[0]) return this[0][prop];
@@ -29728,6 +30286,8 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
                 else {
                     //Live events
                     for (j = 0; j < events.length; j++) {
+                        if (!this[i].dom7LiveListeners) this[i].dom7LiveListeners = [];
+                        this[i].dom7LiveListeners.push({listener: listener, liveListener: handleLiveEvent});
                         this[i].addEventListener(events[j], handleLiveEvent, false);
                     }
                 }
@@ -29739,7 +30299,20 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
             var events = eventName.split(' ');
             for (var i = 0; i < events.length; i++) {
                 for (var j = 0; j < this.length; j++) {
-                    this[j].removeEventListener(events[i], listener, false);
+                    if (arguments.length === 3) {
+                        var _targetSelector = arguments[1];
+                        var _listener = arguments[2];
+                        if (this[j].dom7LiveListeners) {
+                            for (var k = 0; k < this[j].dom7LiveListeners.length; k++) {
+                                if (this[j].dom7LiveListeners[k].listener === _listener) {
+                                    this[j].removeEventListener(events[i], this[j].dom7LiveListeners[k].liveListener, false);
+                                }
+                            }
+                        }
+                    }
+                    else {
+                        this[j].removeEventListener(events[i], listener, false);
+                    }
                 }
             }
             return this;
@@ -30044,10 +30617,16 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
                 }
             }
         },
-        next: function () {
+        next: function (selector) {
             if (this.length > 0) {
-                if (this[0].nextElementSibling) return new Dom7([this[0].nextElementSibling]);
-                else return new Dom7([]);
+                if (selector) {
+                    if (this[0].nextElementSibling && $(this[0].nextElementSibling).is(selector)) return new Dom7([this[0].nextElementSibling]);
+                    else return new Dom7([]);
+                }
+                else {
+                    if (this[0].nextElementSibling) return new Dom7([this[0].nextElementSibling]);
+                    else return new Dom7([]);
+                }
             }
             else return new Dom7([]);
         },
@@ -30063,10 +30642,16 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
             }
             return new Dom7(nextEls);
         },
-        prev: function () {
+        prev: function (selector) {
             if (this.length > 0) {
-                if (this[0].previousElementSibling) return new Dom7([this[0].previousElementSibling]);
-                else return new Dom7([]);
+                if (selector) {
+                    if (this[0].previousElementSibling && $(this[0].previousElementSibling).is(selector)) return new Dom7([this[0].previousElementSibling]);
+                    else return new Dom7([]);
+                }
+                else {
+                    if (this[0].previousElementSibling) return new Dom7([this[0].previousElementSibling]);
+                    else return new Dom7([]);
+                }
             }
             else return new Dom7([]);
         },
@@ -30141,7 +30726,7 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
                 if (this[i].parentNode) this[i].parentNode.removeChild(this[i]);
             }
             return this;
-        },
+        }
     };
     // Shortcuts
     (function () {
@@ -30169,6 +30754,11 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
     // Selector 
     var $ = function (selector, context) {
         var arr = [], i = 0;
+        if (selector && !context) {
+            if (selector instanceof Dom7) {
+                return selector;
+            }
+        }
         if (selector) {
             // String
             if (typeof selector === 'string') {
@@ -30283,8 +30873,57 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
         return curTransform || 0;
     };
     
+    $.requestAnimationFrame = function (callback) {
+        if (window.requestAnimationFrame) return window.requestAnimationFrame(callback);
+        else if (window.webkitRequestAnimationFrame) return window.webkitRequestAnimationFrame(callback);
+        else if (window.mozRequestAnimationFrame) return window.mozRequestAnimationFrame(callback);
+        else {
+            return window.setTimeout(callback, 1000 / 60);
+        }
+    };
+    
+    // Plugins
     $.fn = Dom7.prototype;
     
+    $.fn.scrollTop = function (top, duration) {
+        var dom = this;
+        if (typeof top === 'undefined') {
+            if (dom.length > 0) return dom[0].scrollTop;
+            else return null;
+        }
+        return dom.each(function () {
+            var el = this;
+            var currentTop = el.scrollTop;
+            if (!duration) {
+                el.scrollTop = top;
+                return;
+            }
+            var maxTop = el.scrollHeight - el.offsetHeight;
+            var newTop = Math.max(Math.min(top, maxTop), 0);
+            var startTime = null;
+            if (newTop === currentTop) return;
+            function render(time) {
+                if (time === undefined) {
+                    time = new Date().getTime();
+                }
+                if (startTime === null) {
+                    startTime = time;
+                }
+                var scrollTop = currentTop + ((time - startTime) / duration * (newTop - currentTop));
+                if (newTop > currentTop && scrollTop >= newTop)  {
+                    el.scrollTop = newTop;
+                    return;
+                }
+                if (newTop < currentTop && scrollTop <= newTop)  {
+                    el.scrollTop = newTop;
+                    return;
+                }
+                el.scrollTop = scrollTop;
+                $.requestAnimationFrame(render);
+            }
+            $.requestAnimationFrame(render);
+        });
+    };
     // Ajax
     $.ajax = function (options) {
         var defaults = {
@@ -30301,6 +30940,9 @@ define('can/map/validations',["can/util/library", "can/map"], function (can) {
             dataType: 'text',
             contentType: 'application/x-www-form-urlencoded'
         };
+    
+        //For jQuery guys
+        if (options.type) options.type = options.method;
     
         // Merge options and defaults
         for (var prop in defaults) {
@@ -30625,10 +31267,14 @@ define('common/framework7-extension',['can', 'framework7'],
 		
 		override.get = app.get;
 		
-		app.nextPage = {};
+		app.nextPage = {
+			options : {}
+		};
 		
 		app.get = function(url, callback){
+			console.log('Get ' + url);
 			if(url.indexOf('page_')>-1){
+				app.closePanel();
 				var pagehtml = can.view.render('//common/pagebase.mustache', {title : url.substring(5), showBackLink : app.nextPage.showBackLink});
 			
 				app.nextPage.element = $('<div class="page-content"></div>')
@@ -30643,6 +31289,22 @@ define('common/framework7-extension',['can', 'framework7'],
 				return;
 			}
 			
+			else if(url.indexOf('/') == 0 || url.indexOf('http://wordpress.dev') == 0){
+				app.closePanel();
+				var pagehtml = can.view.render('//common/pagebase.mustache', {title : '', showBackLink : true});
+				app.nextPage.element = $('<div class="page-content"></div>');
+				app.nextPage.options.wordpressUrl = url;
+				
+				var controller = new WordpressController(app.nextPage.element, app.nextPage.options);
+				controller._preRenderPhase().done(function(){
+					callback(pagehtml);
+					
+					
+				});
+				
+				return;
+				
+			}
 			override.get(url,callback);
 		}
 		
@@ -30676,17 +31338,20 @@ define('common/framework7-extension',['can', 'framework7'],
 			var pageConfig = e.detail.page;
 			
 			
+			
 			var $page = $(pageConfig.container);
 			
 			$page.append(app.nextPage.element);
 			var controller = $page.find('.page-content').control();
 			controller._postRenderPhase();
-			app.nextPage = {};
+			app.nextPage = {
+				options : {}
+			};
 			
 			
 		});
 		Framework7.$(document).on('pageAfterAnimation', function (e) {
-			app.closePanel();
+			//app.closePanel();
 			
 			
 		});
@@ -30826,12 +31491,12 @@ null,{get:"message"})));___v1ew.push(
 "\n");return ___v1ew.join("");}}])));___v1ew.push(
 "\t</ul>\n</div>\n<div class=\"content-block row\">\n<a href=\"#\"  class=\"button openpopup\">Popup </a>\n</div>");; return ___v1ew.join('') }));
 can.view.preloadStringRenderer('app_sitecontainer_mustache',can.Mustache(function(scope,options) { var ___v1ew = [];___v1ew.push(
-"\n<div class=\"statusbar-overlay\"></div>\n<div class=\"panel-overlay\"></div>\n<div class=\"appmenu-overlay open\"></div>\n<div class=\"appmenu\"></div>\n<div class=\"panel panel-left panel-reveal\">\n\t<div class=\"content-block\">\n\t\t<p><a data-page=\"page_start\" href=\"#\">Start</a></p>\n\t\t<p><a data-page=\"page_services\" href=\"#\">Services</a></p>\n\t\t<p><a data-page=\"page_about\"  href=\"#\">About</a></p>\n\t</div>\n</div>\n<div class=\"views tabs toolbar-through\">\n\t<div id=\"view-1\" class=\"view view-main\" data-page=\"index-1\">\n\t\t<div class=\"navbar\">\n\t\t\t<div class=\"navbar-inner\">\n\t\t\t\t<div class=\"center sliding\" ");___v1ew.push(
+"\n<div class=\"statusbar-overlay\"></div>\n<div class=\"panel-overlay\"></div>\n<div class=\"appmenu-overlay open\"></div>\n<div class=\"appmenu\"></div>\n<div class=\"panel panel-left panel-reveal\">\n\t<div class=\"content-block\">\n\t\n\t\t<p><a href=\"/sida1\" class=\"navigate\">Start</a></p>\n\t\t<p><a href=\"/sida2\" class=\"navigate\">Sida 2</a></p>\n\t\t<p><a href=\"/sida3\" class=\"navigate\">Sida 3</a></p>\n\t\t\n\t\t<p><a href=\"page_services\" class=\"navigate\">Inställningar</a></p>\n\t\t<p><a href=\"page_about\" class=\"navigate\">Inställningar 2</a></p>\n\t</div>\n</div>\n<div class=\"views tabs toolbar-through\">\n\t<div id=\"view-1\" class=\"view view-main\" data-page=\"index-1\">\n\t\t<div class=\"navbar\">\n\t\t\t<div class=\"navbar-inner\">\n\t\t\t\t<div class=\"center sliding\" ");___v1ew.push(
 can.view.txt(2,'div','style',this,function(){var ___v1ew = [];___v1ew.push(
 "style=\"");___v1ew.push(
 "\"");return ___v1ew.join('')}));
 ___v1ew.push(
-"></div>\n\t\t\t\t<div class=\"right\"><a href=\"#\" class=\"open-panel link icon-only\"><i class=\"icon icon-bars-blue\"></i></a></div>\n\t\t\t</div>\n\t\t</div>\n\t\t<div class=\"pages navbar-through toolbar-through\">\n\t\t\t<div class=\"page-content\"></div>\n\t\t</div>\n\t</div>\n\t<div class=\"toolbar tabbar tabbar-labels\">\n\t\t<div class=\"toolbar-inner\">\n\t\t\t<a href=\"page_start\" class=\"navigate tab-link\"><i\n\t\t\t\tclass=\"icon tabbar-demo-icon-1\"></i><span class=\"tabbar-label\">Start</span></a><a\n\t\t\t\thref=\"page_services\" class=\"navigate tab-link active\"><i\n\t\t\t\tclass=\"icon tabbar-demo-icon-2\"></i><span class=\"tabbar-label\">Services</span></a><a\n\t\t\t\thref=\"page_about\" class=\"navigate tab-link\"><i\n\t\t\t\tclass=\"icon tabbar-demo-icon-3\"></i><span\n\t\t\t\tclass=\"tabbar-label\">About</span></a> \n\t\t\t\t\n\t\t\n\t\t</div>\n\t</div>\n</div>\n<div class=\"popup\" ");___v1ew.push(
+"></div>\n\t\t\t\t<div class=\"right\"><a href=\"#\" class=\"open-panel link icon-only\"><i class=\"icon icon-bars-blue\"></i></a></div>\n\t\t\t</div>\n\t\t</div>\n\t\t<div class=\"pages navbar-through toolbar-through\">\n\t\t\t<div class=\"page-content\"></div>\n\t\t</div>\n\t</div>\n\t<div class=\"toolbar tabbar tabbar-labels\">\n\t\t<div class=\"toolbar-inner\">\n\t\t\t<a href=\"/sida1\" class=\"navigate\">Start</a>\n\t\t\t<a href=\"/sida2\" class=\"navigate\">Sida 2</a>\n\t\t\t<a href=\"/sida3\" class=\"navigate\">Sida 3</a>\n\t\t\n\t\t</div>\n\t</div>\n</div>\n<div class=\"popup\" ");___v1ew.push(
 can.view.txt(2,'div','style',this,function(){var ___v1ew = [];___v1ew.push(
 "style=\"");___v1ew.push(
 "display: none;\"");return ___v1ew.join('')}));
@@ -30851,7 +31516,47 @@ can.view.txt(2,'div','style',this,function(){var ___v1ew = [];___v1ew.push(
 "style=\"");___v1ew.push(
 "\"");return ___v1ew.join('')}));
 ___v1ew.push(
-"></div>\n\t<div class=\"popover-inner\">\n\t\t<div class=\"list-block\">\n\t\t\t<ul>\n\t\t\t\t<li><a href=\"start\" class=\"list-button item-link\">Modals</a></li>\n\t\t\t\t<li><a href=\"popover.html\" class=\"list-button item-link\">Popover</a></li>\n\t\t\t\t<li><a href=\"tabs.html\" class=\"list-button item-link\">Tabs</a></li>\n\t\t\t\t<li><a href=\"panels.html\" class=\"list-button item-link\">Side\n\t\t\t\t\t\tPanels</a></li>\n\t\t\t\t<li><a href=\"list-view.html\" class=\"list-button item-link\">List\n\t\t\t\t\t\tView</a></li>\n\t\t\t\t<li><a href=\"forms.html\" class=\"list-button item-link\">Forms</a></li>\n\t\t\t</ul>\n\t\t</div>\n\t</div>\n</div>");; return ___v1ew.join('') })); });
+"></div>\n\t<div class=\"popover-inner\">\n\t\t<div class=\"list-block\">\n\t\t\t<ul>\n\t\t\t\t<li><a href=\"start\" class=\"list-button item-link\">Modals</a></li>\n\t\t\t\t<li><a href=\"popover.html\" class=\"list-button item-link\">Popover</a></li>\n\t\t\t\t<li><a href=\"tabs.html\" class=\"list-button item-link\">Tabs</a></li>\n\t\t\t\t<li><a href=\"panels.html\" class=\"list-button item-link\">Side\n\t\t\t\t\t\tPanels</a></li>\n\t\t\t\t<li><a href=\"list-view.html\" class=\"list-button item-link\">List\n\t\t\t\t\t\tView</a></li>\n\t\t\t\t<li><a href=\"forms.html\" class=\"list-button item-link\">Forms</a></li>\n\t\t\t</ul>\n\t\t</div>\n\t</div>\n</div>");; return ___v1ew.join('') }));
+can.view.preloadStringRenderer('common_pagebase_mustache',can.Mustache(function(scope,options) { var ___v1ew = [];___v1ew.push(
+"<div class=\"navbar\">\n\t\n\t<div class=\"navbar-inner\">");___v1ew.push(
+"\n");___v1ew.push(
+can.view.txt(
+0,
+'div',
+0,
+this,
+can.Mustache.txt(
+{scope:scope,options:options},
+"#",{get:"if"},{get:"showBackLink"},[
+
+{fn:function(scope,options){var ___v1ew = [];___v1ew.push(
+"\t\t<div class=\"left sliding\" ");___v1ew.push(
+can.view.txt(2,'div','style',this,function(){var ___v1ew = [];___v1ew.push(
+"style=\"");___v1ew.push(
+"\"");return ___v1ew.join('')}));
+___v1ew.push(
+">\n\t\t\t<a href=\"#\" class=\"back link\"><i class=\"icon icon-back-blue\" ");___v1ew.push(
+can.view.txt(2,'i','style',this,function(){var ___v1ew = [];___v1ew.push(
+"style=\"");___v1ew.push(
+"\"");return ___v1ew.join('')}));
+___v1ew.push(
+"></i>\n\t\t\t\t<span>Back</span></a>\n\t\t</div>");___v1ew.push(
+"\n");return ___v1ew.join("");}}])));___v1ew.push(
+"\t\t<div class=\"center sliding\" ");___v1ew.push(
+can.view.txt(2,'div','style',this,function(){var ___v1ew = [];___v1ew.push(
+"style=\"");___v1ew.push(
+"\"");return ___v1ew.join('')}));
+___v1ew.push(
+">");___v1ew.push(
+can.view.txt(
+1,
+'div',
+0,
+this,
+can.Mustache.txt(
+{scope:scope,options:options},
+null,{get:"title"})));___v1ew.push(
+"</div>\n\t\t<div class=\"right\"><a href=\"#\" class=\"open-panel link icon-only\"><i class=\"icon icon-bars-blue\"></i></a></div>\n\t</div>\n</div>\n<div class=\"pages\">\n    <!-- Page, data-page contains page name-->\n    <div data-page=\"\" class=\"page\">\n\t\t\n    </div>\n</div>\n");; return ___v1ew.join('') })); });
 define("views", function(){});
 
 
@@ -31351,6 +32056,58 @@ define('common/common',['can',
 			};
 
 		});
+require(['common/common'],
+	
+			
+function(bc){
+
+BaseController.extend('WordpressController',
+/* @Static */
+{
+	
+},
+/* @Prototype */
+{
+	html : '//app/pages/about/about.mustache',
+	
+	getData : function(){
+		
+		return {
+			pageContent : $.ajax({
+				  url: '' + this.options.wordpressUrl
+			})
+		}
+	},
+	preRender : function(data){
+		
+	},
+	postRender : function(){
+		var page = this.element[0];
+		FM7App.initPage(page);
+	},
+	_postRenderPhase : function(){
+		var controller = this, element = this.element;
+		
+		
+		var pageContent = $(this.options.pageContent);
+		var content = pageContent.find('#page-container > .page');
+
+		
+		element.html(content);
+		controller.postRender();
+		element.addClass('controller');
+		element.trigger('rendered');
+		
+	}
+
+});
+
+
+
+})
+;
+define("common/wordpresscontroller", function(){});
+
 define('app/models/mevent',['common/common'],
 function(){
 
@@ -32395,7 +33152,7 @@ require(['can',
          "common/framework7-extension",
          "views", 
          'common/common',
- 
+         'common/wordpresscontroller',
          'app/models',
          'app/pages',
          'app/models/fixtures'], function() {
@@ -32417,13 +33174,15 @@ require(['can',
 					dynamicNavbar: true
 				});
 			
-				FM7App.loadPage(FM7App.mainView, 'page_start', false);
+				FM7App.loadPage(FM7App.mainView, '/sida1', false);
 			});
-		},
+		}
+		/*,
 		'.panel-left a click' : function(el,ev){
 			ev.stop();
 			FM7App.loadPage(FM7App.mainView, el.attr('data-page'), false);
 		}
+		*/
 	});
 	
 	

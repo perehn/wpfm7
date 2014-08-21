@@ -27,7 +27,7 @@ require(['can',
          "common/framework7-extension",
          "views", 
          'common/common',
- 
+         'common/wordpresscontroller',
          'app/models',
          'app/pages',
          'app/models/fixtures'], function() {
@@ -49,13 +49,15 @@ require(['can',
 					dynamicNavbar: true
 				});
 			
-				FM7App.loadPage(FM7App.mainView, 'page_start', false);
+				FM7App.loadPage(FM7App.mainView, '/sida1', false);
 			});
-		},
+		}
+		/*,
 		'.panel-left a click' : function(el,ev){
 			ev.stop();
 			FM7App.loadPage(FM7App.mainView, el.attr('data-page'), false);
 		}
+		*/
 	});
 	
 	

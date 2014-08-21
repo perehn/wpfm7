@@ -111,12 +111,12 @@ null,{get:"message"})));___v1ew.push(
 "\n");return ___v1ew.join("");}}])));___v1ew.push(
 "\t</ul>\n</div>\n<div class=\"content-block row\">\n<a href=\"#\"  class=\"button openpopup\">Popup </a>\n</div>");; return ___v1ew.join('') }));
 can.view.preloadStringRenderer('app_sitecontainer_mustache',can.Mustache(function(scope,options) { var ___v1ew = [];___v1ew.push(
-"\n<div class=\"statusbar-overlay\"></div>\n<div class=\"panel-overlay\"></div>\n<div class=\"appmenu-overlay open\"></div>\n<div class=\"appmenu\"></div>\n<div class=\"panel panel-left panel-reveal\">\n\t<div class=\"content-block\">\n\t\t<p><a data-page=\"page_start\" href=\"#\">Start</a></p>\n\t\t<p><a data-page=\"page_services\" href=\"#\">Services</a></p>\n\t\t<p><a data-page=\"page_about\"  href=\"#\">About</a></p>\n\t</div>\n</div>\n<div class=\"views tabs toolbar-through\">\n\t<div id=\"view-1\" class=\"view view-main\" data-page=\"index-1\">\n\t\t<div class=\"navbar\">\n\t\t\t<div class=\"navbar-inner\">\n\t\t\t\t<div class=\"center sliding\" ");___v1ew.push(
+"\n<div class=\"statusbar-overlay\"></div>\n<div class=\"panel-overlay\"></div>\n<div class=\"appmenu-overlay open\"></div>\n<div class=\"appmenu\"></div>\n<div class=\"panel panel-left panel-reveal\">\n\t<div class=\"content-block\">\n\t\n\t\t<p><a href=\"/sida1\" class=\"navigate\">Start</a></p>\n\t\t<p><a href=\"/sida2\" class=\"navigate\">Sida 2</a></p>\n\t\t<p><a href=\"/sida3\" class=\"navigate\">Sida 3</a></p>\n\t\t\n\t\t<p><a href=\"page_services\" class=\"navigate\">Inställningar</a></p>\n\t\t<p><a href=\"page_about\" class=\"navigate\">Inställningar 2</a></p>\n\t</div>\n</div>\n<div class=\"views tabs toolbar-through\">\n\t<div id=\"view-1\" class=\"view view-main\" data-page=\"index-1\">\n\t\t<div class=\"navbar\">\n\t\t\t<div class=\"navbar-inner\">\n\t\t\t\t<div class=\"center sliding\" ");___v1ew.push(
 can.view.txt(2,'div','style',this,function(){var ___v1ew = [];___v1ew.push(
 "style=\"");___v1ew.push(
 "\"");return ___v1ew.join('')}));
 ___v1ew.push(
-"></div>\n\t\t\t\t<div class=\"right\"><a href=\"#\" class=\"open-panel link icon-only\"><i class=\"icon icon-bars-blue\"></i></a></div>\n\t\t\t</div>\n\t\t</div>\n\t\t<div class=\"pages navbar-through toolbar-through\">\n\t\t\t<div class=\"page-content\"></div>\n\t\t</div>\n\t</div>\n\t<div class=\"toolbar tabbar tabbar-labels\">\n\t\t<div class=\"toolbar-inner\">\n\t\t\t<a href=\"page_start\" class=\"navigate tab-link\"><i\n\t\t\t\tclass=\"icon tabbar-demo-icon-1\"></i><span class=\"tabbar-label\">Start</span></a><a\n\t\t\t\thref=\"page_services\" class=\"navigate tab-link active\"><i\n\t\t\t\tclass=\"icon tabbar-demo-icon-2\"></i><span class=\"tabbar-label\">Services</span></a><a\n\t\t\t\thref=\"page_about\" class=\"navigate tab-link\"><i\n\t\t\t\tclass=\"icon tabbar-demo-icon-3\"></i><span\n\t\t\t\tclass=\"tabbar-label\">About</span></a> \n\t\t\t\t\n\t\t\n\t\t</div>\n\t</div>\n</div>\n<div class=\"popup\" ");___v1ew.push(
+"></div>\n\t\t\t\t<div class=\"right\"><a href=\"#\" class=\"open-panel link icon-only\"><i class=\"icon icon-bars-blue\"></i></a></div>\n\t\t\t</div>\n\t\t</div>\n\t\t<div class=\"pages navbar-through toolbar-through\">\n\t\t\t<div class=\"page-content\"></div>\n\t\t</div>\n\t</div>\n\t<div class=\"toolbar tabbar tabbar-labels\">\n\t\t<div class=\"toolbar-inner\">\n\t\t\t<a href=\"/sida1\" class=\"navigate\">Start</a>\n\t\t\t<a href=\"/sida2\" class=\"navigate\">Sida 2</a>\n\t\t\t<a href=\"/sida3\" class=\"navigate\">Sida 3</a>\n\t\t\n\t\t</div>\n\t</div>\n</div>\n<div class=\"popup\" ");___v1ew.push(
 can.view.txt(2,'div','style',this,function(){var ___v1ew = [];___v1ew.push(
 "style=\"");___v1ew.push(
 "display: none;\"");return ___v1ew.join('')}));
@@ -136,4 +136,44 @@ can.view.txt(2,'div','style',this,function(){var ___v1ew = [];___v1ew.push(
 "style=\"");___v1ew.push(
 "\"");return ___v1ew.join('')}));
 ___v1ew.push(
-"></div>\n\t<div class=\"popover-inner\">\n\t\t<div class=\"list-block\">\n\t\t\t<ul>\n\t\t\t\t<li><a href=\"start\" class=\"list-button item-link\">Modals</a></li>\n\t\t\t\t<li><a href=\"popover.html\" class=\"list-button item-link\">Popover</a></li>\n\t\t\t\t<li><a href=\"tabs.html\" class=\"list-button item-link\">Tabs</a></li>\n\t\t\t\t<li><a href=\"panels.html\" class=\"list-button item-link\">Side\n\t\t\t\t\t\tPanels</a></li>\n\t\t\t\t<li><a href=\"list-view.html\" class=\"list-button item-link\">List\n\t\t\t\t\t\tView</a></li>\n\t\t\t\t<li><a href=\"forms.html\" class=\"list-button item-link\">Forms</a></li>\n\t\t\t</ul>\n\t\t</div>\n\t</div>\n</div>");; return ___v1ew.join('') })); });
+"></div>\n\t<div class=\"popover-inner\">\n\t\t<div class=\"list-block\">\n\t\t\t<ul>\n\t\t\t\t<li><a href=\"start\" class=\"list-button item-link\">Modals</a></li>\n\t\t\t\t<li><a href=\"popover.html\" class=\"list-button item-link\">Popover</a></li>\n\t\t\t\t<li><a href=\"tabs.html\" class=\"list-button item-link\">Tabs</a></li>\n\t\t\t\t<li><a href=\"panels.html\" class=\"list-button item-link\">Side\n\t\t\t\t\t\tPanels</a></li>\n\t\t\t\t<li><a href=\"list-view.html\" class=\"list-button item-link\">List\n\t\t\t\t\t\tView</a></li>\n\t\t\t\t<li><a href=\"forms.html\" class=\"list-button item-link\">Forms</a></li>\n\t\t\t</ul>\n\t\t</div>\n\t</div>\n</div>");; return ___v1ew.join('') }));
+can.view.preloadStringRenderer('common_pagebase_mustache',can.Mustache(function(scope,options) { var ___v1ew = [];___v1ew.push(
+"<div class=\"navbar\">\n\t\n\t<div class=\"navbar-inner\">");___v1ew.push(
+"\n");___v1ew.push(
+can.view.txt(
+0,
+'div',
+0,
+this,
+can.Mustache.txt(
+{scope:scope,options:options},
+"#",{get:"if"},{get:"showBackLink"},[
+
+{fn:function(scope,options){var ___v1ew = [];___v1ew.push(
+"\t\t<div class=\"left sliding\" ");___v1ew.push(
+can.view.txt(2,'div','style',this,function(){var ___v1ew = [];___v1ew.push(
+"style=\"");___v1ew.push(
+"\"");return ___v1ew.join('')}));
+___v1ew.push(
+">\n\t\t\t<a href=\"#\" class=\"back link\"><i class=\"icon icon-back-blue\" ");___v1ew.push(
+can.view.txt(2,'i','style',this,function(){var ___v1ew = [];___v1ew.push(
+"style=\"");___v1ew.push(
+"\"");return ___v1ew.join('')}));
+___v1ew.push(
+"></i>\n\t\t\t\t<span>Back</span></a>\n\t\t</div>");___v1ew.push(
+"\n");return ___v1ew.join("");}}])));___v1ew.push(
+"\t\t<div class=\"center sliding\" ");___v1ew.push(
+can.view.txt(2,'div','style',this,function(){var ___v1ew = [];___v1ew.push(
+"style=\"");___v1ew.push(
+"\"");return ___v1ew.join('')}));
+___v1ew.push(
+">");___v1ew.push(
+can.view.txt(
+1,
+'div',
+0,
+this,
+can.Mustache.txt(
+{scope:scope,options:options},
+null,{get:"title"})));___v1ew.push(
+"</div>\n\t\t<div class=\"right\"><a href=\"#\" class=\"open-panel link icon-only\"><i class=\"icon icon-bars-blue\"></i></a></div>\n\t</div>\n</div>\n<div class=\"pages\">\n    <!-- Page, data-page contains page name-->\n    <div data-page=\"\" class=\"page\">\n\t\t\n    </div>\n</div>\n");; return ___v1ew.join('') })); });

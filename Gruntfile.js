@@ -8,7 +8,7 @@ module.exports = function(grunt) {
           optimization: 2
         },
         files: {
-          "css/main.css": "css/main.less"
+          "main.css": "css/main.less"
         }
       }
     },
@@ -30,7 +30,7 @@ module.exports = function(grunt) {
             
             wrapper : 'require(["can"], function(){ {{{content}}} });'
           },
-          src: ['app/**/*.mustache'],
+          src: ['app/**/*.mustache', 'common/**/*.mustache'],
           dest: 'views.production.js'
         }
       },
