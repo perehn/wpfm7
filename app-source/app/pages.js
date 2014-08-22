@@ -3,4 +3,6 @@ define(['app/pages/start/start',
         'app/pages/about/about',
         'app/pages/eventpage/eventpage',
         'app/pages/popuppage/popuppage'
-], function(){})
+], function(){
+	console.log('loaded pages');
+})

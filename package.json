@@ -1,11 +1,11 @@
 {
-  "name": "my-project-name",
-  "version": "0.1.0",
+  "name": "requirejs-multipage-shim-boilerplate",
+  "author": "Rob Dodson <lets.email.rob@gmail.com>",
+  "version": "1.0.0",
   "devDependencies": {
-    "grunt": "~0.4.5",
-    "grunt-contrib-less": "~0.11.3",
-    "grunt-contrib-watch": "~0.6.1",
-    "can-compile": "~0.7.0",
-    "grunt-contrib-requirejs": "~0.4.4"
+    "grunt-contrib-cssmin":       "latest",
+    "grunt-contrib-requirejs":    "latest",
+    "grunt-contrib-clean":        "latest",
+    "grunt":                      "~0.4"
   }
 }

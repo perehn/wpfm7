@@ -1,4 +1,4 @@
-require(['common/common'],
+require(['common/basecontroller'],
 	
 			
 function(bc){

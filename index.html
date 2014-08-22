@@ -8,16 +8,18 @@
     <title>My App</title>
     <!-- Path to Framework7 Library CSS-->
     <!-- Path to your custom app styles-->
-    <link href="main.css?v=5" media="all" rel="stylesheet" type="text/css" />
+    <link href="css/main.css?v=6" media="all" rel="stylesheet" type="text/css" />
     </head>
   <body>
 
     <!-- Path to Framework7 Library JS-->
     
-    <script data-main="app-production" src="bower_components/requirejs/require.js"></script>
+
+	<script data-main="app-production/appbase" src="bower_components/requirejs/require.js"></script>
 	<script type="text/javascript">
 		require.config({
-			urlArgs : "v=5"
+			baseUrl : 'app-production',
+			urlArgs : "v=7"
 		})
 	</script>
   </body>

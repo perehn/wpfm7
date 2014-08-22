@@ -1,8 +1,8 @@
-require(['common/common'],
+define(['stache!app/pages/start/start.mustache'],
 	
 			
-function(bc){
-
+function(template){
+console.log('loaded page start');
 BaseController.extend('Page.Start',
 /* @Static */
 {
@@ -10,7 +10,7 @@ BaseController.extend('Page.Start',
 },
 /* @Prototype */
 {
-	html : '//app/pages/start/start.mustache',
+	template : template,
 	
 	getData : function(){
 		return {

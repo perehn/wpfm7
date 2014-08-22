@@ -1,6 +1,7 @@
-define(['can', 
-        'common/basecontroller', 
-        'common/basemodel.js'],
+define(['can/map',
+        'can/view/mustache',
+        'common/basemodel',
+        'common/basecontroller'],
 		function(){
 			C = {};
 			C.currentPageInfo = new can.Map();

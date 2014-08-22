@@ -1,5 +1,5 @@
 
-define(['can', 'can/construct/super'],
+define(['can/control', 'can/construct/super'],
 function() {
 	
 	return can.Control.extend('BaseController',{
@@ -59,7 +59,13 @@ function() {
 
 	_postRenderPhase : function(){
 		var controller = this, element = this.element;
-		element.html(controller.html, controller.options);
+		if(controller.template){
+			element.html(controller.template(controller.options));
+			
+		}else if(controller.html){
+			element.html(controller.html, controller.options);
+		}
+		
 		controller.postRender();
 		element.addClass('controller');
 		element.trigger('rendered');

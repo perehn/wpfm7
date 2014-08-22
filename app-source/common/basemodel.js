@@ -1,5 +1,5 @@
 
-define(['can'],
+define(['can/model'],
 	function(){
 		
 /**

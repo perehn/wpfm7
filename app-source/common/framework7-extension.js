@@ -1,5 +1,5 @@
-define(['can', 'framework7'], 
-		function(){
+define([ 'framework7', 'stache!common/pagebase.mustache'], 
+		function(fm7, pagebaseTemplate){
 
 	window.Framework7extension = function(params){
 		
@@ -12,14 +12,21 @@ define(['can', 'framework7'],
 			options : {}
 		};
 		
-		app.get = function(url, callback){
+		app.get = function(url, view, callback){
 			console.log('Get ' + url);
 			if(url.indexOf('page_')>-1){
 				app.closePanel();
-				var pagehtml = can.view.render('//common/pagebase.mustache', {title : url.substring(5), showBackLink : app.nextPage.showBackLink});
-			
+				//var pagehtml = can.view.render('//common/pagebase.mustache', {title : url.substring(5), showBackLink : app.nextPage.showBackLink});
+				var pagehtml = pagebaseTemplate.render( {title : url.substring(5), showBackLink : app.nextPage.showBackLink});
+				
+				
+				
 				app.nextPage.element = $('<div class="page-content"></div>')
 				var pageControllerClass = Page[can.capitalize(url.substring(5))];
+				if(!pageControllerClass){
+					console.log('COuld not find controller for ' + url);
+					return;
+				}
 				var controller = new pageControllerClass(app.nextPage.element, app.nextPage.options);
 				controller._preRenderPhase().done(function(){
 					callback(pagehtml);
@@ -32,7 +39,7 @@ define(['can', 'framework7'],
 			
 			else if(url.indexOf('/') == 0 || url.indexOf('http://wordpress.dev') == 0){
 				app.closePanel();
-				var pagehtml = can.view.render('//common/pagebase.mustache', {title : '', showBackLink : true});
+				var pagehtml = pagebaseTemplate.render( {title : '', showBackLink : true});
 				app.nextPage.element = $('<div class="page-content"></div>');
 				app.nextPage.options.wordpressUrl = url;
 				

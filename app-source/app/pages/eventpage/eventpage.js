@@ -1,7 +1,7 @@
-require(['common/common'],
+define(['stache!app/pages/eventpage/eventpage.mustache'],
 	
 			
-function(bc){
+function(template){
 
 BaseController.extend('Page.Eventpage',
 /* @Static */
@@ -10,7 +10,7 @@ BaseController.extend('Page.Eventpage',
 },
 /* @Prototype */
 {
-	html : '//app/pages/eventpage/eventpage.mustache',
+	template : template,
 	
 	getData : function(){
 		

@@ -1,7 +1,6 @@
-require(['common/common'],
+define(['stache!app/pages/about/about.mustache'],
 	
-			
-function(bc){
+function(template){
 
 BaseController.extend('Page.About',
 /* @Static */
@@ -10,7 +9,8 @@ BaseController.extend('Page.About',
 },
 /* @Prototype */
 {
-	html : '//app/pages/about/about.mustache',
+	html : null,
+	template : template,
 	
 	getData : function(){
 		return {
